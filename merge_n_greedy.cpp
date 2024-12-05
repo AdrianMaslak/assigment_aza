@@ -1,8 +1,6 @@
 #include <iostream>
 #include <vector>
-
 using namespace std;
-
 // Function to swap two integers
 void swapInts(int &a, int &b)
 {
@@ -10,22 +8,18 @@ void swapInts(int &a, int &b)
     a = b;
     b = temp;
 }
-
 // Function to heapify a subtree rooted at index 'i' in the heap array
 void heapify(vector<int> &heap, int size, int i)
 {
     int smallest = i;      // Initialize smallest as root
     int left = 2 * i + 1;  // Left child index
     int right = 2 * i + 2; // Right child index
-
     // If left child exists and is smaller than root
     if (left < size && heap[left] < heap[smallest])
         smallest = left;
-
     // If right child exists and is smaller than the smallest so far
     if (right < size && heap[right] < heap[smallest])
         smallest = right;
-
     // If smallest is not root
     if (smallest != i)
     {
@@ -33,7 +27,6 @@ void heapify(vector<int> &heap, int size, int i)
         heapify(heap, size, smallest);
     }
 }
-
 // Function to build a min-heap from an unsorted array
 void buildMinHeap(vector<int> &heap)
 {
@@ -42,13 +35,11 @@ void buildMinHeap(vector<int> &heap)
     for (int i = size / 2 - 1; i >= 0; i--)
         heapify(heap, size, i);
 }
-
 // Function to insert a new key into the heap
 void insertHeap(vector<int> &heap, int key)
 {
     heap.push_back(key);     // Insert the new key at the end
     int i = heap.size() - 1; // Current index
-
     // Fix the min-heap property if it is violated
     while (i != 0 && heap[(i - 1) / 2] > heap[i])
     {
@@ -56,7 +47,6 @@ void insertHeap(vector<int> &heap, int key)
         i = (i - 1) / 2;
     }
 }
-
 // Function to extract the minimum element (root) from the heap
 int extractMin(vector<int> &heap)
 {
@@ -72,53 +62,41 @@ int extractMin(vector<int> &heap)
         heap.pop_back();
         return root;
     }
-
     // Store the minimum value, and replace root with the last element
     int root = heap[0];
     heap[0] = heap[size - 1];
     heap.pop_back();
     heapify(heap, heap.size(), 0);
-
     return root;
 }
-
 // Function to perform the greedy merge algorithm
 void greedyMerge(vector<int> files, int n)
 {
     // Create a min-heap from the list of files
     vector<int> heap = files;
     buildMinHeap(heap);
-
     int totalRecordMoves = 0;
-
     cout << "Merge Steps:\n";
     cout << "---------------------------\n";
-
     // Continue merging until only one file remains
     while (heap.size() > 1)
     {
         // Extract the two smallest files
         int first = extractMin(heap);
         int second = extractMin(heap);
-
         // Merge them and update the total record moves
         int merged = first + second;
         totalRecordMoves += merged;
-
         cout << "Merged " << first << " and " << second << " into " << merged
              << " (Total Record Moves: " << totalRecordMoves << ")\n";
-
         // Insert the merged file back into the heap
         insertHeap(heap, merged);
     }
-
     cout << "---------------------------\n";
     cout << "Total Record Moves: " << totalRecordMoves << "\n\n";
 }
-
 int main()
 {
-
     int n;
     cout << "Enter the number of files: ";
     cin >> n;
@@ -135,6 +113,5 @@ int main()
         cin >> userFiles[i];
     }
     greedyMerge(userFiles, n);
-
     return 0;
 }
