@@ -1,7 +1,7 @@
 #include <iostream>
 #include <vector>
 using namespace std;
-// Function to swap two integers
+
 void swapInts(int &a, int &b)
 {
     int temp = a;
@@ -38,23 +38,21 @@ void buildMinHeap(vector<int> &heap)
 // Function to insert a new key into the heap
 void insertHeap(vector<int> &heap, int key)
 {
-    heap.push_back(key);     // Insert the new key at the end
-    int i = heap.size() - 1; // Current index
-    // Fix the min-heap property if it is violated
+    heap.push_back(key); // Insert the new key at the end
+    int i = heap.size() - 1;
     while (i != 0 && heap[(i - 1) / 2] > heap[i])
     {
         swapInts(heap[i], heap[(i - 1) / 2]);
         i = (i - 1) / 2;
     }
 }
-// Function to extract the minimum element (root) from the heap
 int extractMin(vector<int> &heap)
 {
     int size = heap.size();
     if (size <= 0)
     {
         cout << "Heap underflow. No elements to extract.\n";
-        return -1; // Indicates an error
+        return -1;
     }
     if (size == 1)
     {
@@ -62,34 +60,27 @@ int extractMin(vector<int> &heap)
         heap.pop_back();
         return root;
     }
-    // Store the minimum value, and replace root with the last element
     int root = heap[0];
     heap[0] = heap[size - 1];
     heap.pop_back();
     heapify(heap, heap.size(), 0);
     return root;
 }
-// Function to perform the greedy merge algorithm
 void greedyMerge(vector<int> files, int n)
 {
-    // Create a min-heap from the list of files
     vector<int> heap = files;
     buildMinHeap(heap);
     int totalRecordMoves = 0;
     cout << "Merge Steps:\n";
     cout << "---------------------------\n";
-    // Continue merging until only one file remains
     while (heap.size() > 1)
     {
-        // Extract the two smallest files
         int first = extractMin(heap);
         int second = extractMin(heap);
-        // Merge them and update the total record moves
         int merged = first + second;
         totalRecordMoves += merged;
         cout << "Merged " << first << " and " << second << " into " << merged
              << " (Total Record Moves: " << totalRecordMoves << ")\n";
-        // Insert the merged file back into the heap
         insertHeap(heap, merged);
     }
     cout << "---------------------------\n";

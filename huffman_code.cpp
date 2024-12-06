@@ -1,37 +1,87 @@
 #include <iostream>
 #include <vector>
-#include <queue>
 #include <unordered_map>
-#include <algorithm>
 #include <bitset>
+#include <cmath>
 
 using namespace std;
 
-// Structure for a node in the heap
 struct Node
 {
     char character;
     int frequency;
-    int depth; // Depth in the simulated tree
+    int depth;
     Node *left, *right;
 
-    // Constructor for leaf nodes
     Node(char c, int freq) : character(c), frequency(freq), depth(0), left(nullptr), right(nullptr) {}
-
-    // Constructor for internal nodes
     Node(int freq, Node *l, Node *r) : character('\0'), frequency(freq), depth(0), left(l), right(r) {}
 };
 
-// Comparator for the priority queue (min-heap)
-struct Compare
+struct MinHeap
 {
-    bool operator()(Node *a, Node *b)
+    vector<Node *> heap;
+
+    void push(Node *node)
     {
-        return a->frequency > b->frequency; // Smaller frequency has higher priority
+        heap.push_back(node);
+        size_t idx = heap.size() - 1;
+        while (idx > 0)
+        {
+            size_t parent = (idx - 1) / 2;
+            if (heap[parent]->frequency <= heap[idx]->frequency)
+                break;
+            swap(heap[parent], heap[idx]);
+            idx = parent;
+        }
+    }
+
+    Node *pop()
+    {
+        if (heap.empty())
+            return nullptr;
+        Node *minNode = heap[0];
+        heap[0] = heap.back();
+        heap.pop_back();
+
+        size_t idx = 0;
+        while (true)
+        {
+            size_t left = 2 * idx + 1, right = 2 * idx + 2, smallest = idx;
+            if (left < heap.size() && heap[left]->frequency < heap[smallest]->frequency)
+                smallest = left;
+            if (right < heap.size() && heap[right]->frequency < heap[smallest]->frequency)
+                smallest = right;
+            if (smallest == idx)
+                break;
+            swap(heap[idx], heap[smallest]);
+            idx = smallest;
+        }
+        return minNode;
+    }
+
+    bool empty()
+    {
+        return heap.empty();
     }
 };
 
-// Assign code lengths recursively
+void bubbleSort(vector<pair<char, int>> &symbols, unordered_map<char, int> &codeLengths)
+{
+    for (size_t i = 0; i < symbols.size(); ++i)
+    {
+        for (size_t j = 0; j < symbols.size() - i - 1; ++j)
+        {
+            bool condition = (codeLengths[symbols[j].first] > codeLengths[symbols[j + 1].first]) ||
+                             (codeLengths[symbols[j].first] == codeLengths[symbols[j + 1].first] &&
+                              symbols[j].first > symbols[j + 1].first);
+            if (condition)
+            {
+                swap(symbols[j], symbols[j + 1]);
+            }
+        }
+    }
+}
+
 void assignCodeLengths(Node *node, int depth, unordered_map<char, int> &codeLengths)
 {
     if (!node)
@@ -47,14 +97,9 @@ void assignCodeLengths(Node *node, int depth, unordered_map<char, int> &codeLeng
 }
 
 // Generate canonical codes
-unordered_map<char, string> generateCanonicalCodes(vector<pair<char, int>> &symbols, unordered_map<char, int> &codeLengths)
+unordered_map<char, string> CanonicalCode(vector<pair<char, int>> &symbols, unordered_map<char, int> &codeLengths)
 {
-    // Sort by code length, then lexicographically
-    sort(symbols.begin(), symbols.end(), [&](const pair<char, int> &a, const pair<char, int> &b)
-         {
-        if (codeLengths[a.first] == codeLengths[b.first])
-            return a.first < b.first;
-        return codeLengths[a.first] < codeLengths[b.first]; });
+    bubbleSort(symbols, codeLengths);
 
     unordered_map<char, string> codes;
     int code = 0;
@@ -62,26 +107,44 @@ unordered_map<char, string> generateCanonicalCodes(vector<pair<char, int>> &symb
 
     for (const auto &sym : symbols)
     {
-        // Adjust the code length
         while (currentLength < codeLengths[sym.first])
         {
             code <<= 1; // Left shift to increase code length
             ++currentLength;
         }
 
-        // Convert code to binary string
         codes[sym.first] = bitset<32>(code).to_string().substr(32 - codeLengths[sym.first]);
-
-        // Increment code for the next symbol
         ++code;
     }
 
     return codes;
 }
 
+unordered_map<char, string> FreqApprox(vector<pair<char, int>> &symbols, unordered_map<char, int> &approxCodeLengths)
+{
+    bubbleSort(symbols, approxCodeLengths);
+
+    unordered_map<char, string> approxCodes;
+    int code = 0;
+    int currentLength = 0;
+
+    for (const auto &sym : symbols)
+    {
+        while (currentLength < approxCodeLengths[sym.first])
+        {
+            code <<= 1; // Left shift to increase code length
+            ++currentLength;
+        }
+
+        approxCodes[sym.first] = bitset<32>(code).to_string().substr(32 - approxCodeLengths[sym.first]);
+        ++code;
+    }
+
+    return approxCodes;
+}
+
 int main()
 {
-    // Input: character frequencies
     vector<pair<char, int>> frequencies = {
         {'A', 45},
         {'B', 13},
@@ -90,42 +153,52 @@ int main()
         {'E', 9},
         {'F', 5}};
 
-    // Create a min-heap (priority queue)
-    priority_queue<Node *, vector<Node *>, Compare> minHeap;
+    int totalFrequency = 0;
+    for (const auto &entry : frequencies)
+    {
+        totalFrequency += entry.second;
+    }
 
-    // Insert all characters into the heap
+    // Assign code lengths using ceil(-log2(probability))
+    unordered_map<char, int> approxCodeLengths;
+    for (const auto &entry : frequencies)
+    {
+        double probability = static_cast<double>(entry.second) / totalFrequency;
+        approxCodeLengths[entry.first] = static_cast<int>(ceil(-log2(probability)));
+    }
+
+    MinHeap minHeap;
     for (const auto &entry : frequencies)
     {
         minHeap.push(new Node(entry.first, entry.second));
     }
 
-    // Build the Huffman structure using the min-heap
-    while (minHeap.size() > 1)
+    while (minHeap.heap.size() > 1)
     {
-        Node *left = minHeap.top();
-        minHeap.pop();
-        Node *right = minHeap.top();
-        minHeap.pop();
-
+        Node *left = minHeap.pop();
+        Node *right = minHeap.pop();
         Node *merged = new Node(left->frequency + right->frequency, left, right);
         minHeap.push(merged);
     }
 
-    // Root of the simulated tree
-    Node *root = minHeap.top();
+    Node *root = minHeap.pop();
 
-    // Assign code lengths using a recursive function
-    unordered_map<char, int> codeLengths;
-    assignCodeLengths(root, 0, codeLengths);
+    unordered_map<char, int> trueCodeLengths;
+    assignCodeLengths(root, 0, trueCodeLengths);
 
-    // Generate canonical Huffman codes
-    unordered_map<char, string> canonicalCodes = generateCanonicalCodes(frequencies, codeLengths);
+    unordered_map<char, string> canonicalCodes = CanonicalCode(frequencies, trueCodeLengths);
 
-    // Print canonical Huffman codes
-    cout << "Canonical Huffman Codes:" << endl;
-    for (const auto &code : canonicalCodes)
+    unordered_map<char, string> approxCodes = FreqApprox(frequencies, approxCodeLengths);
+
+    cout << "CHAR\tFREQ\tCANONICAL\tFREQ BASED" << endl;
+
+    for (const auto &entry : frequencies)
     {
-        cout << code.first << ": " << code.second << endl;
+        char character = entry.first;
+        cout << character << '\t'
+             << entry.second << '\t'
+             << canonicalCodes[character] << '\t'
+             << approxCodes[character] << endl;
     }
 
     return 0;

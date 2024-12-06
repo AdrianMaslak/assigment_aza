@@ -66,7 +66,6 @@ int scheduleJobs(vector<Job> &jobs)
 
 int main()
 {
-    // vector of jobs
     vector<Job> jobs = {
         {1, 40, 2},
         {2, 15, 4},
@@ -76,7 +75,6 @@ int main()
         {6, 45, 1},
         {7, 55, 1}};
 
-    // Print sorted jobs
     for (auto job : jobs)
     {
         cout << "Job: " << job.job << ", Profit: " << job.profit << ", Deadline: " << job.deadline << endl;
